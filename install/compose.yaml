@@ -1,13 +1,30 @@
 services:
   jenkins:
-    image: jenkins/jenkins # :latest (weekly), :lts, :jdk17, :jdk11, :lts-jdk17, etc
-    ports:
-      - "127.0.0.1:8080:8080" # drop 127.0.0.1: if you want remote access to Jenkins
-    volumes:
-      - jenkins_home:/var/jenkins_home # persist data across container recreation, updating image, etc
-    restart: unless-stopped # when you instruct Jenkins to restart this ensures it will start back up, also if your machine reboots when Docker starts back up it will start Jenkins back up too
+    build:
+      dockerfile: Dockerfile
+      context: .
+    container_name: jenkins
+    restart: always
+    privileged: true
+    user: root
 
+    healthcheck:
+      test: curl -s https://localhost:8080 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
+      interval: 1m
+      timeout: 5s
+      retries: 3
+
+    ports:
+      - '8080:8080'
+    networks:
+      - default
+    volumes:
+      - /Users/imro/jenkins_home:/var/jenkins_home # persist data across container recreation, updating image, etc
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ~/.ssh:/var/jenkins_home/.ssh
+      - ~/.m2:/root/.m2
+networks:
+  default:
 volumes:
   jenkins_home:
-
-# FYI https://www.jenkins.io/doc/book/installing/docker/
